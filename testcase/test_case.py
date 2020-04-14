@@ -1,13 +1,13 @@
 #!/user/bin/env python
-#coding=utf-8
-'''
+# coding=utf-8
+"""
 @project : my_rf
 @author  : djcps
 #@file   : testcase.py
 #@ide    : PyCharm
 #@time   : 2019-05-28 12:37:01
-'''
 
+"""
 import unittest
 from ddt import *
 from core.readExcel import *
@@ -31,56 +31,54 @@ class Test(unittest.TestCase):
     # 识别函数助手
     FUNC_EXPR = '__.*?\(.*?\)'
 
-    def save_date(self,source,key,jexpr:str):
-        '''
+    def save_date(self, source, key, jexpr: str):
+        """
         提取参数并保存至全局变量池
         :param source: 目标字符串
         :param key: 全局变量池的key
         :param jexpr: jsonpath表达式
         :return:
-        '''
+        """
         if jexpr.startswith("$"):
-            value = jsonpath.jsonpath(source,jexpr)
+            value = jsonpath.jsonpath(source, jexpr)
             if not value:
                 raise KeyError("该jsonpath未匹配到值,请确认接口响应和jsonpath正确性")
             value = value[0]
             self.saves[key] = value
-            logger.info("保存 {}=>{} 到全局变量池".format(key,value))
+            logger.info("保存 {}=>{} 到全局变量池".format(key, value))
         else:
             self.saves[key] = jexpr
             logger.info("保存 {}=>{} 到全局变量池".format(key, jexpr))
 
-    def build_param(self,s,id):
-        '''
+    def build_param(self, s, id):
+        """
         识别${key}并替换成全局变量池的value,处理__func()函数助手
         :param s: 待替换的字符串
         :return:
-        '''
-
-        #遍历所有取值并做替换
+        """
+        # 遍历所有取值并做替换
         keys = re.findall(self.EXPR, s)
         for key in keys:
             value = self.saves.get(key+"-"+id)
             s = s.replace('${'+key+'}',str(value))
 
 
-        #遍历所有函数助手并执行，结束后替换
+        # 遍历所有函数助手并执行，结束后替换
         funcs = re.findall(self.FUNC_EXPR, s)
         for func in funcs:
             fuc = func.split('__')[1]
             fuc_name = fuc.split("(")[0]
-            fuc = fuc.replace(fuc_name,fuc_name.lower())
+            fuc = fuc.replace(fuc_name, fuc_name.lower())
             value = eval(fuc)
-            s = s.replace(func,str(value))
+            s = s.replace(func, str(value))
         return s
 
-    def execute_setup_sql(self,db_connect,setup_sql):
-        '''
+    def execute_setup_sql(self, db_connect, setup_sql):
+        """
         执行setup_sql,并保存结果至参数池
         :param db_connect: mysql数据库实例
         :param setup_sql: 前置sql
-        :return:
-        '''
+        :return:"""
         for sql in [i for i in setup_sql.split(";") if i != ""]:
             result = db_connect.execute_sql(sql)
             logger.info("执行前置sql====>{}，影响条数:{}".format(sql,result))
@@ -92,12 +90,11 @@ class Test(unittest.TestCase):
                     logger.info("保存 {}=>{} 到全局变量池".format(key, result[key]))
 
     def execute_teardown_sql(self,db_connect,teardown_sql):
-        '''
+        """
         执行teardown_sql,并保存结果至参数池
         :param db_connect: mysql数据库实例
         :param teardown_sql: 后置sql
-        :return:
-        '''
+        :return:"""
         for sql in [i for i in teardown_sql.split(";") if i != ""]:
             result = db_connect.execute_sql(sql)
             logger.info("执行后置sql====>{}，影响条数:{}".format(sql, result))
@@ -109,12 +106,12 @@ class Test(unittest.TestCase):
                     logger.info("保存 {}=>{} 到全局变量池".format(key, result[key]))
 
     def execute_redis_get(self,redis_connect,keys):
-        '''
+        """
         读取redis中key值,并保存结果至参数池
         :param redis_connect: redis实例
         :param keys:
         :return:
-        '''
+        """
         for key in [key for key in keys.split(";") if key!=""]:
             value = redis_connect.get(key)
             self.saves[key] = value
